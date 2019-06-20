@@ -1,0 +1,116 @@
+# ECE608 Assignment 1
+
+# Data set
+The Assignment aims to use the Board game rankings from boardgamegeek.com dataset to gain experience on the use of the R environment and on working with tabular data. This dataset is publicly available and was originally obtained by scrapping information from boardgamegeek.com.
+The file board_games.csv was taken from [1] where the data set can also be consulted. The csv file was used as the data source and the documentation was used to understand the dataset's contents and to identify the column labels.
+
+# Tools 
+R 3.6.0 was used for this assignment, in Ubuntu 19.04 using RStudio. The tidyverse and gridExtra libraries for R were loaded. Tidyverse enables the use of ggplot2, dplyr, tidyr, and readr packages for diverse objectives including importing, manipulating and plotting data. GridExtra draws tables and arranges multiple plots on a page.
+
+```{r}
+library("tidyverse")
+library("gridExtra")
+library("grid")
+```
+
+# Data Set Overview
+Reading the csv file with the tidyverse function (read_csv) stores all numerical variables as doubles and string variables as characters. This way of storing variables is inefficient as it uses more resources than really needed.
+
+```{r}
+bgunder <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-12/board_games.csv')
+```
+
+Reading the csv file with the standard function (read.csv) stores the string variables as factors and the numerical variables as either integers or doubles according to the requirement of each column. This result is appropriate as it uses less computational resources.
+
+```{r}
+bg <- read.csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2019/2019-03-12/board_games.csv')
+
+#head(bg)
+head(bg)
+str(bg)
+sum(is.na(bg))
+```
+
+The structure function (str( ) ) gives a glance at the data set content. It shows that the dataset contains 22 variables with 10532 observations. A further analysis shows that of these observations, 24658 are missing values.
+
+According to the data set’s description, it includes information of games published between 1950 and 2016, and with at least 50 ratings. It contains information regarding the game mechanics, number and age of players, playing time, the designer and publisher, as well as the average rating and number of users that rated the game.
+
+# Scope of the Data Set
+
+```{r, fig.width=10, fig.heigth = 10}
+p1 <- ggplot(bg, aes(x = year_published, y = average_rating, alpha = users_rated)) + 
+  geom_point(color = "red2") +
+    labs(x = "Year Published", y = "Average Rating", alpha = "Number of users that\nrated the game")
+p2 <- ggplot(bg, aes(x = year_published, y = average_rating, alpha = users_rated)) + 
+  geom_jitter(color = "red2") +
+  labs(x = "Year Published", y = "Average Rating", alpha = "Number of users that\nrated the game")
+
+fig_cap=textGrob("Figure 1. Scatterplot using geom_point (first) and using geom_jitter (second) for the relation between Average Ranking and the Year of Publication of a board game", 
+           gp=gpar(fontsize=9, col="#2b2b2b"), 
+           x=unit(0.005, "npc"), just=c("left", "bottom"))
+
+my_layout <- rbind(c(1), c(2), c(3))
+grid.arrange(p1,p2,fig_cap, layout_matrix = my_layout, heights=c(0.47, 0.47, 0.06))
+
+```
+
+To quickly asses the scope of the dataset and the behavior of the ‘average_rating’ against the ‘year_published’, two plots were created. The first graph was plotted using geom_point and the second one using geom_jitter.
+
+Geom_point plots the raw data without any modification. The advantage of doing so is that the plot created has the real data that was gathered in the data set and might be a good option for scientific papers since it does not implicate any assumptions or alterations of the data. Nonetheless, this approach might have a set of drawbacks. Firstly, it can be difficult to fully visualize discrete data or dense portions of continuous data due to over plotting, i.e. having more than one point in the same place. Secondly, it could lead to misconceptions about the data. In this particular case for example, it might seem that all games from a specific year were published the same day, as the real distribution throughout the year is not represented and cannot be inferred from the plot.
+
+On the other hand, geom_jitter plots the data by adding a small amount of random noise and thus it spreads out the data points allowing the individual points to be seen. The result is a more visually pleasant plot that could be used for applications such as marketing. The drawback of this plot is that the conclusions derived from observing the graph could be misleading due to the fact that the representation is not precise as the data does not account for the added random.
+
+# Exploring category type of games: "Dice" and "Cards"
+```{r}
+# Filtering the data set to only include the board games that are ‘Card Game’, ‘Dice’ or Both type games
+bg2 <- bg %>% 
+  filter(grepl("Dice", category) | grepl("Card", category)) %>% 
+  mutate(type = ifelse(grepl("Dice", category) & grepl("Card", category), "Both", ifelse(grepl("Dice", category), "Dice", "Cards")))
+
+#Visualizing a game with Both type games
+#head(bg2$category,14)
+#head(bg2$type,14)
+```
+
+The dataset was filtered to only include the games that are “Dice”, “Card” or both. Three different types of graphs were created: geom_jitter (scatter plot), geaom_boxplot and geom_violin. The plots show the average_rating vs the type of game.
+
+```{r, fig.width=10, fig.heigth = 10}
+#Plotting a scatter plot, box plot and violin plot of the average_rating per type of game
+
+p1 <- ggplot(bg2, aes(x = type, y = average_rating)) + 
+  geom_jitter(color = "magenta4")+
+   labs(x = "Type of Game", y = "Average Rating")
+
+p2 <- ggplot(bg2, aes(x = type, y = average_rating)) + 
+  geom_boxplot(color = "turquoise4")+
+   labs(x = "Type of Game", y = "Average Rating")
+  
+p3 <- ggplot(bg2, aes(x = type, y = average_rating))+ 
+  geom_violin(color = "deeppink4")+
+   labs(x = "Type of Game", y = "Average Rating")
+
+fig_cap=textGrob("Figure 2. Scatterplot using (left), box plot (center) and violin plot (right) for the relation between Average Rating and the Type of Game of a board game", 
+           gp=gpar(fontsize=9, col="#2b2b2b"), 
+           x=unit(0.005, "npc"), just=c("left", "bottom"))
+
+my_layout <- rbind(c(1:3), c(4,4,4))
+grid.arrange(p1,p2,p3, fig_cap, layout_matrix = my_layout, heights=c(0.95, 0.05))
+#grid.arrange(p1, p2, p3, nrow=1)
+```
+
+The scatter plot shows each individual data point. This graph provides information regarding the range of the data points and a gross sense of the data distribution. It does not have a problem with the data size as it can handle from small to big data sets but might get tricky to observe dense regions. Another disadvantage of this type of plots is that it might be difficult to extract statistical summaries from it. 
+
+On the other hand, the boxplot shows the range of the data as well but also gives a little more information about the distribution of the data by providing the quartiles, displaying if the data is skewed or not, and even shows which are some tentative outliers. It does not display the individual datapoints but rather ranges of data (quartiles). The boxplot does not have a problem with the size or density of the dataset, but its drawback is that since this plot gives information regarding ranges it would be difficult to observe any characteristic distribution within these ranges.
+
+The final type of graph, the violin plot, shows the distribution of the data. It can illustrate if there is a characteristic behavior within the data and it can be ease to see if the data is skewed. It does not give information regarding the quartiles but the mode could be inferred from it. The biggest drawback of this type of plot is that it cannot handle small or low-density data sets as these would appear as a thin straight line. 
+
+
+
+
+
+
+
+
+
+
+
