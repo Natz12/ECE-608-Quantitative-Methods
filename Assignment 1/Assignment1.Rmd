@@ -104,7 +104,104 @@ On the other hand, the boxplot shows the range of the data as well but also give
 
 The final type of graph, the violin plot, shows the distribution of the data. It can illustrate if there is a characteristic behavior within the data and it can be ease to see if the data is skewed. It does not give information regarding the quartiles but the mode could be inferred from it. The biggest drawback of this type of plot is that it cannot handle small or low-density data sets as these would appear as a thin straight line. 
 
+# Ranking the games based on average_rating
+The games were ranked based on their average_rating from best (1) to worst (10,532).
 
+Various hypothesis regarding the ranking emerged. One possible question to answer is if games that were published after the median publishing year (2007) were ranked higher than games that were published before this year. Figure 3 shows that there are differences between this two groups and that these variations might be significant. While the range stays constant, the biggest disparity is seen in the interquartile range and the mean, with the group of games published after 2007 having a higher rank in both measures. A statistical test might prove that this disparity has sufficient statistical significance and that therefore the two groups are not equal. These tests will be seen in coming assignments.
+
+```{r}
+#bg3 <- bg %>% arrange(desc(average_rating))
+#bg3$ranking <- seq.int(nrow(bg3))
+
+# Getting the rank of each game based on the average_rating
+bg3 <- bg %>% 
+  mutate(ranking = rank(bg$average_rating))
+```
+
+
+```{r, fig.width=8, fig.heigth = 8, results = 'hide', warning = FALSE}
+cond <- bg3$year_published
+condcol <- cond >= median(cond)
+
+p3 <- ggplot(bg3, aes(x = cond, y = ranking, color = condcol)) + 
+  geom_point(alpha = 0.5) +
+  labs(x = "Publishing Year", y = "Ranking") + theme(legend.position = "none")
+
+p4 <- ggplot(bg3, aes(y = ranking, x = condcol, color = condcol), size = 0.5) +
+  geom_boxplot(color = "turquoise4") +
+# stat_summary(fun.data = data_summary)
+  stat_summary(fun_y = mean_se(bg3$ranking)) +
+  theme(axis.title.x = element_blank(),axis.title.y = element_blank(), legend.position = "none")
+
+
+p5 <- ggplot(bg3, aes(y = ranking, x = condcol, color = condcol), size = 0.5) +
+  geom_violin(color = "deeppink4") + 
+    stat_summary(fun_y = mean_se(bg3$ranking)) +
+  theme(axis.title.x = element_blank(),
+          axis.title.y = element_blank())+
+  labs(color = paste("Games Published\nAfter",median(cond))) + theme(legend.text=element_text(size=8))
+
+fig_cap=textGrob("Figure 3. Scatter plot (left), box plot (center) and violin plot (right) for the Ranking of the board games. Two groups are shown: games \npublished before or after 2007.", 
+           gp=gpar(fontsize=9, col="#2b2b2b"), 
+           x=unit(0.005, "npc"), just=c("left", "bottom"))
+
+fig_x=textGrob(paste("\t\t\t\t  Game Published After", median(cond)), 
+           gp=gpar(fontsize=11, col="#2b2b2b"), 
+           x=unit(0.005, "npc"), just=c("left", "bottom"))
+
+
+my_layout <- rbind(c(1,1,1,2,2,2,3,3,3,3,3), c(1,1,1,5,5,5,5,5,5,5,5), c(4,4,4,4,4,4,4,4,4,4,4))
+
+grid.arrange(p3, p4, p5, fig_cap, fig_x, layout_matrix = my_layout, heights=c(0.86, 0.04, 0.1))
+```
+
+Another interesting question that might be answered by analyzing the data is if games that have a name longer than 2 words have a higher rank than games with a shorter name. Figure 4 displays the comparison between this two groups and there is not a clear evidence of which group is ranked higher. A statistical test might confirm that the difference is not sufficiently statistically significant to conclude that the groups are not equal.
+
+```{r, fig.width=8, fig.heigth = 8, results = 'hide', warning = FALSE}
+bg4 <- bg3 %>% 
+  mutate(name_length = ifelse(is.na(name), as.double(0), str_count(name, "\\w+")))
+cond <- bg4$name_length
+# bg4$name_length
+# bg4$name
+condcol <- cond >= median(cond)
+#condcol <- cond > 5
+
+p3 <- ggplot(bg3, aes(x = cond, y = ranking, color = condcol)) + 
+  geom_point(alpha = 0.5) +
+  labs(x = "Number of Words", y = "Ranking") + theme(legend.position = "none")
+
+p4 <- ggplot(bg3, aes(y = ranking, x = condcol, color = condcol), size = 0.5) +
+  geom_boxplot(color = "turquoise4") +
+# stat_summary(fun.data = data_summary)
+  stat_summary(fun_y = mean_se(bg3$ranking)) +
+  theme(axis.title.x = element_blank(),axis.title.y = element_blank(), legend.position = "none")
+
+
+p5 <- ggplot(bg3, aes(y = ranking, x = condcol, color = condcol), size = 0.5) +
+  geom_violin(color = "deeppink4") + 
+    stat_summary(fun_y = mean_se(bg3$ranking)) +
+  theme(axis.title.x = element_blank(),
+          axis.title.y = element_blank())+
+  labs(color = paste("Name longer \nthan",median(cond), "words")) + theme(legend.text=element_text(size=8))
+
+fig_cap=textGrob(paste("Figure 4. Scatter plot (left), box plot (center) and violin plot (right) for the Ranking of the board games. Two groups are shown: games with \na name longer or shorter than", median(cond), "words."), 
+           gp=gpar(fontsize=9, col="#2b2b2b"), 
+           x=unit(0.005, "npc"), just=c("left", "bottom"))
+
+fig_x=textGrob(paste("\t\t\t   Game Name Longer Than", median(cond), "Words"), 
+           gp=gpar(fontsize=11, col="#2b2b2b"), 
+           x=unit(0.005, "npc"), just=c("left", "bottom"))
+
+
+my_layout <- rbind(c(1,1,1,2,2,2,3,3,3,3,3), c(1,1,1,5,5,5,5,5,5,5,5), c(4,4,4,4,4,4,4,4,4,4,4))
+
+grid.arrange(p3, p4, p5, fig_cap, fig_x, layout_matrix = my_layout, heights=c(0.86, 0.04, 0.1))
+
+```
+
+## Closing Thoughts
+
+This assignment served its purpose as a first approach to the R environment and the different libraries that will be used during the course. It explored the contrast in the information provided by different plots and the appropriate applications for each one of them. It also examined ways to filter, sort and mutate tabular data. The final exercise provided a task to explore how to report yes or no questions by creating plots to represent the answer.
 
 
 
