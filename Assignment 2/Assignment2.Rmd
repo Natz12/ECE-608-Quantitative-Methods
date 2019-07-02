@@ -1,0 +1,91 @@
+## ECE608 Assignment 1
+
+## Data set
+The assignment aimed to use an abbreviated version of the Gapminder dataset available in R to minutely explore the dataset and stablish some inferences about group differences. The subjects of this assignment included testing normality and homogeneity of variance, and comparing two groups with a t-test. The results were reported in a publishable format.
+
+The Gapminder dataset is publicly available and was originally obtained by the Gapminder Foundation with the interest of educating the general public about worldwide human affairs. The R package “gapminder” was used as source for the dataset.
+
+## Tools 
+R 3.6.0 was used for this assignment, in Ubuntu 19.04 using RStudio. The tidyverse, grid, gridExtra and Gapminder libraries for R were loaded. Tidyverse enables the use of ggplot2, dplyr, tidyr, and readr packages for diverse objectives including importing, manipulating and plotting data. Grid and GridExtra draw tables and arranges multiple plots on a page. The Gapminder library was used as the source of the dataset.
+
+```{r}
+library("tidyverse")
+library("gridExtra")
+library("grid")
+library("gapminder")
+library("e1071")
+library("car")
+library("dplyr")
+```
+
+The structure function (str( ) ) gives a glance at the data set content. It showed that the dataset contained 6 variables with 1704 observations. A further analysis showed that the dataset did not contain missing values.
+
+```{r}
+df <- gapminder
+str(df)
+#summary(df)
+writeLines(paste("\nMissing values:", sum(is.na(df))))
+```
+According to the data set’s description, it includes basic information about countries since 1952 regarding the countries’ names, population, life expectancy, gross domestic product per capita (GDP per capita) and continent it is located.
+
+
+# Question I: Normality Testing
+
+The first analysis of the dataset was to assess the normality of life expectancy in the Americas in the year 2007. There are multiple ways of assessing normality. This assignment explored specific statistical tests, i.e. Kolmogorov-Smirnov (KS) and Shapiro-Wilk (SW) depending on the size of the data set, and visual assessment with plots, i.e. using histograms to visualize the frequency distribution and its skewness and kurtosis, and the P-P/Q-Q plots to compare the actual and predicted values based on a normal distribution.
+
+```{r}
+df.America2007 <-  df %>% filter(continent == "Americas" & year == 2007)
+writeLines(paste("\nSamples:", nrow(df.America2007)))
+head(df.America2007)
+```
+
+# Statistical Test
+
+SW and KS tests can be used to evaluate normality. SW is accurate with small sample size, typically less than 50 observations. On the other hand, KS is a more conservative test and is mostly used in large samples (more than 50 observations). Since the present dataset consisted of 25 samples, SW test was used.
+```{r}
+writeLines("Americas 2007 Life Expectancy")
+writeLines(paste("Samples:", nrow(df.America2007), "\n--------------------------------------"))
+# ks.test(x = df.America2007$lifeExp,
+#         y = "pnorm",
+#         mean = mean(df.America2007$lifeExp),
+#         sd = sd(df.America2007$lifeExp))
+
+shapiro.test(x = df.America2007$lifeExp)
+
+```
+
+The distribution was found to be normal (p=0.1093) using the statistical test.
+
+The data was also examined by analyzing its kurtosis and skewness and the results did not indicate a non-normal distribution.
+
+```{r, fig.width=10, fig.heigth = 10}
+writeLines(paste("Americas 2007 Life Expectancy\n\nSkewness:", round(skewness(df.America2007$lifeExp), digits = 3), "\n\nKurtosis:", round(kurtosis(df.America2007$lifeExp), digits = 3)))
+```
+
+
+The final way to assess the normality of the data was by using the frequency plot (histogram) and the q-q plot as shown in figure 1.
+
+```{r, fig.width=10, fig.heigth = 10}
+pHist <- ggplot(data = df.America2007, aes(x = df.America2007$lifeExp))+
+  geom_histogram(aes(y = ..density..), bins=25, color = "cyan4", fill="cyan3", alpha = 0.5, position="identity") + 
+  geom_density(color = "cyan3", alpha=0.5) +
+  labs(x = "Life Expectancy (years)\n(a)", y = "Frequency")
+
+pQQ <- ggplot(data = df.America2007, aes(sample = df.America2007$lifeExp)) +
+  stat_qq(color = "cyan4", size = 2.5, alpha = 0.7) + 
+  stat_qq_line(color = "cyan3", size= 1) +
+  labs(x = "Theoretical\n(b)", y= "Sample")
+
+fig_cap <- textGrob("Figure 1. Histogram (a) and Q-Q plot (b) for the life expectancy of the Americas in 2007.", 
+           gp = gpar(col="#000F64", fontsize=10), 
+           x = unit(0.005, "npc"), 
+           just = c("left", "bottom"))
+
+my_layout <- rbind(c(1,2), c(1,2), c(3))
+grid.arrange(pHist, pQQ, fig_cap, layout_matrix = my_layout, heights=c(0.47, 0.47, 0.06))
+
+# Caption code based in stackoverflow answer by hrbrmstr
+# https://stackoverflow.com/a/41106250
+```
+
+The histogram and q-q plot show that the distribution is a little distorted from the normal distribution, but taking into account all the tests it can be said that in overall the distribution is normal.
