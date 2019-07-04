@@ -1,4 +1,4 @@
-## ECE608 Assignment 1
+## ECE608 Assignment 2
 
 ## Data set
 The assignment aimed to use an abbreviated version of the Gapminder dataset available in R to minutely explore the dataset and stablish some inferences about group differences. The subjects of this assignment included testing normality and homogeneity of variance, and comparing two groups with a t-test. The results were reported in a publishable format.
@@ -89,3 +89,313 @@ grid.arrange(pHist, pQQ, fig_cap, layout_matrix = my_layout, heights=c(0.47, 0.4
 ```
 
 The histogram and q-q plot show that the distribution is a little distorted from the normal distribution, but taking into account all the tests it can be said that in overall the distribution is normal.
+
+# Question II: Handling Outliers when comparing population from Asian countries to European countries in 1952
+
+The Data Frame was filtered to only include data from Asia and Europe in 1952.
+
+One scenario that had to be dealt with was the presence of outliers. An outlier is a value that is noticeably out of the limits of a normal distribution.
+
+To identify the outliers, the Empirical Rule and the Tukey Fence based on the Inter Quartile Range (IQR) techniques were considered. The Empirical Rule uses the principle that any values outside of 3 standard deviations from the mean might be an outlier, and therefore should be handled accordingly [1].This technique is recommended when used in a normal distribution [2].
+
+Opposed to the empirical rule, the Tukey Fence can be used in data that does not follow a normal distribution. Instead of using the mean and standard deviation, this technique uses the median and the inter quartile range (IQR) [3]. The Tukey fence technique expresses that an outlier is any value outside of the range comprised of the first quartile -1.5 times the IQR and the third quartile + 1.5 times the IQR. The Tukey Fence technique was used for this assignment.
+
+
+```{r, fig.width=10, fig.heigth = 10, warning = FALSE}
+# Solution modified from https://stackoverflow.com/a/33525389
+df.1952 <- df %>% filter((continent == "Asia" | continent == "Europe") & year== 1952)
+df.1952 <- df.1952 %>% mutate(pop = pop/1000000)
+
+is_outlier <- function(x) {
+  return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))
+}
+
+df.1952 <- df.1952 %>%
+  group_by(continent) %>%
+  mutate(outlier = ifelse(is_outlier(pop), round(pop,2), as.numeric(NA)))
+
+#df.Asia1952 <- df %>% filter(continent == "Asia" & year== 1952)
+#df.Europe1952 <- df %>% filter(continent == "Europe" & year== 1952)
+
+pboxplot <- ggplot(data = df.1952, aes(x = continent, y = pop, fill = continent, color = continent)) +
+  geom_boxplot(outlier.size=2, outlier.shape = 8, alpha = 0.5) + coord_flip() +
+  labs(title = "(a)", y = "Population (million)", x = "Continent") +
+  scale_color_discrete(name = "Continent") + 
+  scale_fill_discrete(name = "Continent") + 
+  stat_summary(fun_y = mean) + 
+  geom_text(aes(label = ifelse(outlier>1, paste(country), "")), na.rm = TRUE, vjust = runif(63,-1.5,1.5), hjust = runif(63,-0.5,0.5), alpha = 1 )
+  #stat_summary(aes(label=round(..y..,2)), fun_y = max(), geom = "text")
+
+#+ stat_summary(aes(label=round(..y..,2)), fun_y = mean, geom = "text")
+#+geom_text(aes(label=ifelse(pop>24,as.character(Name),'')),hjust=0,vjust=0)
+#+ scale_y_log10() 
+
+pviolin <- ggplot(data = df.1952, aes(x = continent, y = pop, fill = continent, color = continent)) +
+  geom_violin(alpha = 0.5) + coord_flip() +
+  labs(title = "(b)", y = "Population (million)", x = "Continent")+
+  scale_color_discrete(name = "Continent") + 
+  scale_fill_discrete(name = "Continent") + 
+  stat_summary(fun_y = mean) + 
+  stat_summary(aes(label=round(..y..,2)), fun.y = mean, geom = "text", size = 3, vjust = -0.5, color = "black")
+
+fig_cap <- textGrob("Figure 2. Boxplot (a) and violin plot (b) for the population of Asia and Europe in 2007.", 
+           gp = gpar(col="#000F64", fontsize=10), 
+           x = unit(0.005, "npc"), 
+           just = c("left", "bottom"))
+
+my_layout <- rbind(c(1,1), c(2,2), c(3))
+grid.arrange(pboxplot, pviolin, fig_cap, layout_matrix = my_layout, heights=c(0.47, 0.47, 0.06))
+
+```
+To graphically spot the outliers, it was useful to visualize the distribution of the variables of study using a boxplot and a violin plot as can be observed in figure 2. The boxplot displays the outliers using the Tukey fence technique. These plots showed that both continents had four outliers in 1952, but that Asia’s outliers had a larger spread. 
+
+Once the outliers were identified, there were four options to deal with them:
+1.	Make sure it is not a data entry mistake. If it is, the sample can be discarded.
+2.	Transform the data using a function that modifies the distribution and might results in data without outliers. Might make the problem more difficult to interpret.
+3.	Change the measurement. For example, changing the value to the maximum value inside the distribution. It is not highly recommended since this procedure might add bias into the data set.
+4.	Use non-parametric statistics. An example is using the ranking of the countries when sorted by population as opposed to using the real population number. This process might have a lesser statistical power and might get to lose some information, but it prevents the elimination of samples and the modification of data.
+
+The best option to handle outliers depends on the objective of the study. In this case for example, using non-parametric statistics by ranking each country’s population has the detrimental that the huge difference in Asia between China and India with the rest of countries might be lost. Therefore, it might be more favorable to search for a function that transforms the data in a way that there are not outliers but that there is still a sense of distance between points.
+
+## Statistical tests
+## Conduct the appropriate statistical test, demonstrate the underlying assumptions, plot the results, and briefly report the results. If the data breaks assumptions, attempt to correct it using data transformation. 
+
+To answer the following question, a statistical test is necessary. Four assumptions will be examined: 
+1. Normality of the data will be checked with a Kolmogorov-Smirnov or Shapiro-Wilk test depending on the sample size. If deviations from normality are observed, a log transform will be used to condition the data.
+2. Homogeneity of Variance will be tested using Levene's Test.
+3. Interval Data. Since the variables of study are life expectancy and GDP, it can be assured that they are interval data.
+4. For the first question involving life expectancy across two continents, it is assumed that the data from one country does not influence the data from the other country.
+For the second question involving the GDP per capita of a continent between two years, it is assumed that the data is dependent since the same specimen is observed over time.
+
+Statistical significance will be interpreted at alpha = 0.05.
+
+# Question III: Is life expectancy greater in the Americas compared to Africa in 1982?
+
+```{r}
+df.1982 <-  df %>% filter((continent == "Americas" | continent == "Africa") & year== 1982)
+writeLines(paste("Samples of Americas:", nrow(df.1982[df.1982$continent == "Americas",]), "\n--------------------------------------"))
+
+test <- df.1982[df.1982$continent == "Americas",]
+
+shapiro.test(x = test$lifeExp)
+
+writeLines("--------------------------------------")
+
+writeLines(paste("Samples of Africa:", nrow(df.1982[df.1982$continent == "Africa",]), "\n--------------------------------------"))
+
+test <- df.1982[df.1982$continent == "Africa",]
+
+ks.test(x = test$lifeExp,
+        y = "pnorm",
+        mean = mean(test$lifeExp),
+        sd = sd(test$lifeExp))
+
+
+writeLines("--------------------------------------")
+```
+
+The GapMinder Data Frame was filtered to only include data related to the continents America (n = 25) and Africa (n = 52) in 1982. The data was found to be normal using a Shapiro-Wilk (W = 0.95, P = 0.23) and Kolmogorov-Smirnov (D = 0.07, P = 0.91) test respectively. Figure 4 shows that no outliers were detected in either of the continent's life expectancy distributions.
+
+```{r, fig.width=10, fig.heigth = 10, warning = FALSE}
+#df$continent
+
+n=nrow(df.1982)
+
+is_outlier <- function(x) {
+  return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))
+}
+
+
+df.1982<- df.1982 %>%
+  group_by(continent) %>%
+  mutate(outlier = ifelse(is_outlier(lifeExp), round(lifeExp,2), as.numeric(NA)))
+
+#df.Asia1952 <- df %>% filter(continent == "Asia" & year== 1952)
+#df.Europe1952 <- df %>% filter(continent == "Europe" & year== 1952)
+
+pboxplot <- ggplot(data = df.1982, aes(x = continent, y = lifeExp, fill = continent, color = continent)) +
+  geom_boxplot(outlier.size=2, outlier.shape = 8, alpha = 0.4) + coord_flip() +
+  labs(title = "(a)", y = "Life Expentancy (years)", x = "Continent") +
+  scale_color_discrete(name = "Continent") + 
+  scale_fill_discrete(name = "Continent") + 
+  stat_summary(fun_y = mean) + 
+  geom_text(aes(label = ifelse(outlier>1, paste(country), "")), na.rm = TRUE, vjust = runif(n,-2,2), hjust = runif(n,-2,2), alpha = 1 )
+
+
+pviolin <- ggplot(data = df.1982, aes(x = continent, y = lifeExp, fill = continent, color = continent)) +
+  geom_violin(alpha = 0.4) + coord_flip() +
+  labs(title = "(a)", y = "Life Expentancy (years)", x = "Continent") +
+  scale_color_discrete(name = "Continent") + 
+  scale_fill_discrete(name = "Continent") +
+  stat_summary(fun_y = mean) +
+  stat_summary(aes(label=round(..y..,2)), fun.y=mean, geom="text", size = 4, vjust = -0.5, alpha = 1)
+
+fig_cap <- textGrob("Figure 3. Boxplot (a) and violin plot (b) for the life expectancy of America and Africa in 1982.", 
+           gp = gpar(col="#000F64", fontsize=10), 
+           x = unit(0.005, "npc"), 
+           just = c("left", "bottom"))
+
+my_layout <- rbind(c(1,1), c(2,2), c(3))
+grid.arrange(pboxplot, pviolin, fig_cap, layout_matrix = my_layout, heights=c(0.47, 0.47, 0.06))
+```
+
+```{r}
+writeLines("--------------------------------------")
+#Let's check Levene's Test
+leveneTest(lifeExp~continent, data = df.1982, center = mean)
+writeLines("--------------------------------------")
+
+```
+
+The levene's test for homogeneity of variance reveals that the variances are not unequal (p = 0.5488).
+
+All assumptions have been proved, now is time to do the t-test and see if the two groups have a statistically significant difference. As was said before, it is assumed that the data from one country does not influence the data from the other and therefore the samples are independent. 
+
+```{r}
+writeLines("-------------------Americas-------------------")
+writeLines(paste("Mean:", mean(df.1982[df.1982$continent == "Americas",]$lifeExp)))
+writeLines(paste("Standard Deviation:", sd(df.1982[df.1982$continent == "Americas",]$lifeExp)))
+
+writeLines("-------------------Africa-------------------")
+writeLines(paste("Mean:", mean(df.1982[df.1982$continent == "Africa",]$lifeExp)))
+writeLines(paste("Standard Deviation:", sd(df.1982[df.1982$continent == "Africa",]$lifeExp)))
+
+writeLines("-------------------t-test-------------------")
+t.test(lifeExp~continent, data = df.1982, var.equal = TRUE, paired = FALSE)
+```
+Life Expectancy in America was found to be higher compared to the same variable in Africa in 1982 (66.22±6.72 vs. 51.59±7.37 years; t = -8.38, p<0.05)
+
+# Question IV: Does GDP per capita increase between 1952 and 2007 in Africa?
+
+```{r}
+df.Africa <-  df %>% filter((year == 1952 | year == 2007) & continent == "Africa")
+
+df.Africa$year <- as.factor(df.Africa$year)
+
+writeLines(paste("Samples of 1952:", nrow(df.Africa[df.Africa$year == 1952,]), "\n--------------------------------------"))
+
+test <- df.Africa[df.Africa$year == 1952,]
+
+ks.test(x = test$gdpPercap,
+        y = "pnorm",
+        mean = mean(test$gdpPercap),
+        sd = sd(test$gdpPercap))
+
+writeLines("--------------------------------------")
+
+writeLines(paste("Samples of 2007:", nrow(df.Africa[df.Africa$year == 2007,]), "\n--------------------------------------"))
+
+test <- df.Africa[df.Africa$year == 2007,]
+
+ks.test(x = test$gdpPercap,
+        y = "pnorm",
+        mean = mean(test$gdpPercap),
+        sd = sd(test$gdpPercap))
+
+writeLines("--------------------------------------")
+
+```
+
+The GapMinder Data Frame was filtered to only include data related to Africa in the years 1952 (n = 52) and 2007 (n = 52). 
+
+The data was found to be significantly non-normal using a Kolmogorov-Smirnov test, (D=0.20, P<0.05) and (D=0.30, P<0.05). 
+
+```{r}
+df.Africa <- df.Africa %>%  mutate(logGdpPercap = log(df.Africa$gdpPercap))
+
+writeLines(paste("Samples of 1952:", nrow(df.Africa[df.Africa$year == 1952,]), "\n--------------------------------------"))
+
+test <- df.Africa[df.Africa$year == 1952,]
+
+ks.test(x = test$logGdpPercap,
+        y = "pnorm",
+        mean = mean(test$logGdpPercap),
+        sd = sd(test$logGdpPercap))
+
+writeLines("--------------------------------------")
+
+writeLines(paste("Samples of 2007:", nrow(df.Africa[df.Africa$year == 2007,]), "\n--------------------------------------"))
+
+test <- df.Africa[df.Africa$year == 2007,]
+
+ks.test(x = test$logGdpPercap,
+        y = "pnorm",
+        mean = mean(test$logGdpPercap),
+        sd = sd(test$logGdpPercap))
+
+writeLines("--------------------------------------")
+
+```
+
+The data was then log-transformed to obtain a normal distribution, (D = 0.07, P = 0.95) and (D = 0.13, P = 0.298). Figure 5 shows that no outliers were detected in either of the year's GDP per capita distributions.
+
+```{r, fig.width=10, fig.heigth = 10, warning = FALSE}
+
+#df$continent
+#df %>%  group_by(year) %>% filter(year<1957)
+n=nrow(df.Africa)
+
+is_outlier <- function(x) {
+  return(x < quantile(x, 0.25) - 1.5 * IQR(x) | x > quantile(x, 0.75) + 1.5 * IQR(x))
+}
+
+df.Africa<- df.Africa %>%
+  group_by(year) %>%
+  mutate(outlier = ifelse(is_outlier(logGdpPercap), round(logGdpPercap,2), as.numeric(NA)))
+
+#df.Asia1952 <- df %>% filter(continent == "Asia" & year== 1952)
+#df.Europe1952 <- df %>% filter(continent == "Europe" & year== 1952)
+
+pboxplot <- ggplot(data = df.Africa, aes(x = year, y = logGdpPercap, fill = year, color = year)) +
+  geom_boxplot(outlier.size=2, outlier.shape = 8, alpha = 0.4) + coord_flip() +
+  labs(title = "(a)", y = "GDP per capita (log of International Dollars)", x = "Year") +
+  scale_color_discrete(name = "Year") + 
+  scale_fill_discrete(name = "Year") +
+  stat_summary(fun_y = mean) + 
+  geom_text(aes(label = ifelse(outlier>1, paste(country), "")), na.rm = TRUE, vjust = runif(n,-2,2), hjust = runif(n,-2,2), alpha = 1 )
+
+
+pviolin <- ggplot(data = df.Africa, aes(x = year, y = gdpPercap, fill = year, color = year)) +
+  geom_violin(alpha = 0.4) + coord_flip() +
+  labs(title = "(a)", y = "GDP per capita (log of International Dollars)", x = "Year") +
+  scale_color_discrete(name = "Year") + 
+  scale_fill_discrete(name = "Year") +
+  stat_summary(fun_y = mean) +
+  stat_summary(aes(label=round(..y..,2)), fun.y=mean, geom="text", size = 4, vjust = -0.5, alpha = 1)
+
+fig_cap <- textGrob("Figure 5. Boxplot (a) and violin plot (b) for the GDP per capita of Africa in the years 1952 and 2007.", 
+           gp = gpar(col="#000F64", fontsize=10), 
+           x = unit(0.005, "npc"), 
+           just = c("left", "bottom"))
+
+my_layout <- rbind(c(1,1), c(2,2), c(3))
+grid.arrange(pboxplot, pviolin, fig_cap, layout_matrix = my_layout, heights=c(0.47, 0.47, 0.06))
+
+```
+```{r}
+writeLines("--------------------------------------")
+#Let's check Levene's Test
+leveneTest(logGdpPercap~year, data = df.Africa, center = mean)
+writeLines("--------------------------------------")
+
+```
+The levene's test for homogeneity of variance reveals that the variances are unequal (p < 0.05).
+
+
+All assumptions have been tested, and now a t-test can be used to examine if the two groups have a statistically significant difference. As was stated earlier, it is assumed that the data is dependent since the same specimen is observed is over time and therefore it is possible that the GDP in one year influences the GDP in another year in the same country.
+
+```{r}
+writeLines("-------------------1952-------------------")
+writeLines(paste("Mean:", mean(df.Africa[df.Africa$year == 1952,]$gdpPercap)))
+writeLines(paste("Standard Deviation:", sd(df.Africa[df.Africa$year == 1952,]$gdpPercap)))
+
+writeLines("-------------------2007-------------------")
+writeLines(paste("Mean:", mean(df.Africa[df.Africa$year == 2007,]$gdpPercap)))
+writeLines(paste("Standard Deviation:", sd(df.Africa[df.Africa$year == 2007,]$gdpPercap)))
+
+writeLines("-------------------t-test-------------------")
+t.test(logGdpPercap~year, data = df.Africa, var.equal = FALSE, paired = TRUE)
+```
+
+GDP per Capita in Africa in 2007 was found to be higher compared to the same variable in 1952 (1252.57±982.95 vs. 3089.03±3618.16 international dollars; t = -5.78, p<0.05)
+
