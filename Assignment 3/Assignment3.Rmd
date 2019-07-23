@@ -1,0 +1,68 @@
+# ECE608 Assignment 3
+
+# Data set
+The Assignment aims to use the Board game rankings from boardgamegeek.com dataset to gain experience on the use of the R environment and on working with tabular data. This dataset is publicly available and was originally obtained by scrapping information from boardgamegeek.com.
+The file board_games.csv was taken from [1] where the data set can also be consulted. The csv file was used as the data source and the documentation was used to understand the dataset's contents and to identify the column labels.
+
+# Tools 
+R 3.6.0 was used for this assignment, in Ubuntu 19.04 using RStudio. The tidyverse, ez, e1071, car, and emmeans libraries for R were loaded. Tidyverse enables the use of ggplot2, dplyr, tidyr, and readr packages for diverse objectives including importing, manipulating and plotting data. Ez is imported to carry out the ANOVA test and e1071 is useful for its miscellaneous statistical functions.
+
+```{r}
+library("gridExtra")
+library("grid")
+library(tidyverse)    #For data manipulation
+library(ez)           #For ANOVA
+library(e1071)        #Misc statistical functions
+library(car)          #For qqplot
+```
+
+# Data Set
+
+```{r}
+#Read and clean data
+df <- read.csv('D:/Google Drive/AA UW/2019-05/ECE 608 Quantitative Methods in BME/Assignments/Assignment 3/ECE608_A3_BloodFlow.csv')
+
+head(df)
+
+str(df)
+writeLines(paste("\nMissing values:", sum(is.na(df))))
+```
+
+The structure function (str( ) ) gives a glance at the data set content. It shows that the dataset contains 8 variables with 96 participants recruited. A further analysis shows that of these observations, 185 are missing values corresponding to 37 participants.These observations with missing values are discarded leaving the dataset with 59 observations.
+
+```{r}
+df <- na.omit(df)
+head(df)
+
+str(df)
+
+writeLines(paste("\nMissing values:", sum(is.na(df))))
+```
+
+# Question I: Effect of sex on flow at T0
+
+The differences of blood flow at T0 due to sex will be analyzed using two-tailed unpaired t-test and a one-way ANOVA. Normality of the data is assumed and statistical significance will be interpreted at alpha = 0.05. The results of the two statistical tests will be compared and discussed.
+
+## a) t-test
+
+```{r}
+writeLines("--------------------Male--------------------")
+writeLines(paste("Mean:", mean(df[df$Sex == "M",]$T0)))
+writeLines(paste("Standard Deviation:", sd(df[df$Sex == "M",]$T0)))
+
+writeLines("\n-------------------Female-------------------")
+writeLines(paste("Mean:", mean(df[df$Sex == "F",]$T0)))
+writeLines(paste("Standard Deviation:", sd(df[df$Sex == "F",]$T0)))
+
+writeLines("\n-------------------t-test-------------------")
+
+
+#t test
+t.test(T0~Sex,
+       data = df,
+       var.equal = TRUE,
+       paired = FALSE)
+```
+
+After the t-test, the blood flow in males was found to be higher compared to female counter parts at T0 (133.02 ± 42.05 vs 86.71 ± 40.45; t = -4.148, p < 0.01).
+
