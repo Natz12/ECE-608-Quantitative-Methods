@@ -1,6 +1,4 @@
 # ECE608 Assignment 3
-Natalia Hoyos Velasquez 
-UW ID
 
 # Data set
 The Assignment aims to use the Board game rankings from boardgamegeek.com dataset to gain experience on the use of the R environment and on working with tabular data. This dataset is publicly available and was originally obtained by scrapping information from boardgamegeek.com.
@@ -151,4 +149,66 @@ pairwise.t.test(x = df1.long$flow,
 ```
 
 Post-hoc analysis using t-tests with Bonferroni correction revealed that the blood flow for weights was significantly larger than for bike (117.70 ± 50.25 vs 96.17 ± 36.04; P<0.01), for rest (117.70 ± 50.25 vs 86.37 ± 32.47; P<0.01) and for sprint (117.70 ± 50.25 vs 94.97 ± 40.33; P<0.01).
+
+## c)	Post Hoc analysis using Tukey’s HSD method
+
+```{r}
+TukeyHSD(x = df1.ez[["aov"]])
+```
+
+Post-hoc analysis using Tukeys's HSD method revealed that the blood flow for weights was significantly larger than for rest (117.70 ± 50.25 vs 96.17 ± 36.04; P = 0.03).
+
+## d)	Comparison between p-value results of both methods
+
+There is a big difference between the results obtained with both methods (Bonferroni and Tukey's HSD). The former identified differences between 3 comparisons and the later only in one comparison. 
+
+The reason for these differences is that, although both methods intend to control the family-wise error they use different formulas. Bonferroni is slightly more conservative than Tukey and is difficult to have significance which reduces its statistical power. It is not recommended for more than 3 comparisons. 
+
+# Edit July 10
+Bonferroni is less stringent with low amount of comparisons
+
+# 3) Does blood flow change over time?
+
+## a)	One Way ANOVA
+
+The differences in blood flow over time will be analyzed using a one-way ANOVA. The samples will be analyzed as a within subjects design. The Post-Hoc analysis will be performed using t-tests with Bonferroni correction. Statistical significance will be interpreted at alpha = 0.05.
+
+```{r}
+df1.ez <- ezANOVA(data = df1.long,
+                 dv = flow,
+                 wid = ID,
+                 within = time,
+                 type = 3,
+                 return_aov = TRUE)
+print(df1.ez)
+```
+
+A significant main effect on the blood flow over time was found in the dataset (F=7.91; p<0.01).
+
+The sphericity assumption does not pass Mauchly's test and therefore the ANOVA p-value should be corrected. Even with the correction it is found that p<0.01 and therefore it can be said that a main effect on the blood flow over time was found in the dataset.
+
+To be more confident about these results, the assumptions regarding the normality of the residuals have to be tested.
+
+Normality is tested by observing the q-q plot, analyzing the skewness and kurtosis and by applying the Kolmogorov-Smirnov (KS) test.
+
+# Edit July 10
+
+There was a main effect for time on flow (F=7.9, Gge - 0.85, p,0.1) where all timepoints were significantly lower than time 0 (all p<0.05)
+
+```{r}
+
+#Check normality of residuals
+qqPlot(df1.ez[["aov"]][["ID:time"]][["residuals"]])
+
+writeLines(paste("Skewwness:", skewness(df1.ez[["aov"]][["ID:time"]][["residuals"]])))
+
+writeLines(paste("Kurtosis:", kurtosis(df1.ez[["aov"]][["ID:time"]][["residuals"]])))
+
+
+writeLines("--------------------Test--------------------")
+ks.test(x = df1.ez[["aov"]][["ID:time"]][["residuals"]],
+        y = "pnorm",
+        mean = mean(df1.ez[["aov"]][["ID:time"]][["residuals"]]),
+        sd = sd(df1.ez[["aov"]][["ID:time"]][["residuals"]]))
+```
 
