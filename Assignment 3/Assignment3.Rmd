@@ -1,4 +1,6 @@
 # ECE608 Assignment 3
+Natalia Hoyos Velasquez 
+UW ID
 
 # Data set
 The Assignment aims to use the Board game rankings from boardgamegeek.com dataset to gain experience on the use of the R environment and on working with tabular data. This dataset is publicly available and was originally obtained by scrapping information from boardgamegeek.com.
@@ -65,4 +67,88 @@ t.test(T0~Sex,
 ```
 
 After the t-test, the blood flow in males was found to be higher compared to female counter parts at T0 (133.02 ± 42.05 vs 86.71 ± 40.45; t = -4.148, p < 0.01).
+
+## b) One-Way ANOVA
+
+```{r, warning = FALSE}
+df1.ez <- ezANOVA(data = df,
+                 dv = T0,
+                 wid = ID,
+                 between = Sex,
+                 type = 3,
+                 return_aov = TRUE)
+print(df1.ez)
+```
+A significant main effect for Sex was found in the dataset (F=17.21; P<0.01).
+
+The levene's test for homogeneity of variance reveals that the variances are not unequal (p = 0.16106).
+
+No post-hoc test is further needed as the ANOVA was performed using only two groups implying that the differences observed are between these two groups. 
+
+After the one-way ANOVA test, the blood flow of males was found to be higher compared to female counter parts (133.02 ± 42.05 vs 86.71 ± 40.45; F = 17.21, p < 0.01).
+
+## c) Comparison between t-test and ANOVA results
+
+The t value of the t-test is -4.148 and the f-value of the ANOVA is 17.207 which happens to be t^2 and both results have the same p-value. This signifies that in the special case of two groups the F statistic reduces to be the same as the square of the t statistic. 
+
+# 2) Does Flow differ by exercise condition?
+
+The differences in blood flow due to exercise condition will be analyzed using a one-way ANOVA. The Post-Hoc analysis will be performed using t-tests with Bonferroni correction and using Tukey’s Honestly Significant Difference (HSD) method. The results of the two methods will be compared and discussed. Statistical significance will be interpreted at alpha = 0.05. 
+
+## a)	One-way ANOVA
+
+```{r 2) ANOVA, warning = FALSE}
+df1.long <- gather(df, time, flow, T0:T120, factor_key = TRUE)
+
+df1.ez <- ezANOVA(data = df1.long,
+                 dv = flow,
+                 wid = ID,
+                 between = Cond,
+                 type = 3,
+                 return_aov = TRUE)
+print(df1.ez)
+```
+
+A significant main effect for Exercise condition was found in the dataset (F=2.822; P<0.05).
+
+To be more confident about these results, the assumptions regarding the homogeneity of the Variance (HoV) and the normality of the residuals have to be tested.
+
+The levene's test for homogeneity of variance reveals that the variances are not unequal (p = 0.16106).
+
+Normality is tested by observing the q-q plot, analyzing the skewness and kurtosis and by applying the Kolmogorov-Smirnov (KS) test.
+
+```{r}
+#Check normality of residuals
+qqPlot(df1.ez[["aov"]][["residuals"]])
+
+writeLines(paste("Skewwness:", skewness(df1.ez[["aov"]][["residuals"]])))
+
+writeLines(paste("Kurtosis:", kurtosis(df1.ez[["aov"]][["residuals"]])))
+
+
+writeLines("--------------------Test--------------------")
+ks.test(x = df1.ez[["aov"]][["residuals"]],
+        y = "pnorm",
+        mean = mean(df1.ez[["aov"]][["residuals"]]),
+        sd = sd(df1.ez[["aov"]][["residuals"]]))
+```
+
+The skewness and kurtosis are less than 1, indicating that it is possible that the distribution is normal. The q-q plot also depicts a normal distribution. Finally, the KS test indicates that the null hypothesis cannot be rejected (D=0.05, p=0.99), and thus can be said that the data follows a normal distribution.
+
+## b)	Post Hoc analysis using t-tests with Bonferonni correction
+
+```{r}
+df1.cond <- df1.long %>% group_by(Cond) %>% summarise(mean = mean(flow), std = sd(flow))
+df1.cond
+```
+
+```{r}
+pairwise.t.test(x = df1.long$flow,
+                g = df1.long$Cond,
+                paired = FALSE,
+                alternative = "two.sided",
+                p.adjust.method = "bonferroni") #or "holm"
+```
+
+Post-hoc analysis using t-tests with Bonferroni correction revealed that the blood flow for weights was significantly larger than for bike (117.70 ± 50.25 vs 96.17 ± 36.04; P<0.01), for rest (117.70 ± 50.25 vs 86.37 ± 32.47; P<0.01) and for sprint (117.70 ± 50.25 vs 94.97 ± 40.33; P<0.01).
 
