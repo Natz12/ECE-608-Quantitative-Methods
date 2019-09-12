@@ -1,0 +1,31 @@
+# ECE608 Assignment 4
+This assignment aims to use the paper “Active Learning Increases Student Performance in Science, Engineering, and Mathematics” by Freeman et al. to explore the relationship between power, effect size, and sample size and have a better understanding on how to appropriately design studies to test scientific hypotheses. 
+
+# 1. Summary of the findings of the meta-analysis: 
+## a. Purpose of the study
+
+The purpose of the study is to do a meta-analysis to test the hypothesis that traditional lecturing maximizes learning and course performance when comparing undergraduate science, technology, engineering and mathematics (STEM) students’ scores compared with active learning. The performance was evaluated using two outcome variables: scores in formally equivalent assessments and failure rates measured as percentage of students with D or F marks.
+
+# Edit July 10
+To examine wether active learning boosts examination scores
+
+## b. Qualitative description of Figure 2A. 
+
+Figure 2A displays a forest plot summarizing the effect sizes by each of the 8 STEM disciplines analyzed on examination scores, concept inventories or other assessment. Each point describes the result of one of the 8 disciplines and the overall effect, and the horizontal line represents the 95% confidence interval of the study result. In general, a positive effect size was observed. Physics showed the biggest effect size and Biology and Computer Science the lowest.
+
+## c. Primary finding of the study.
+
+There were two primary discoveries. The first finding indicates that student performance in equivalent examinations increased an average of around 0.5 standard deviations with active learning compared to traditional lecturing (weighted standardized mean difference of 0.47, Z = 9.781, p << 0.001). Additionally, the second finding states that, on average, students in traditional lecture courses are 1.5 times more likely to fail than students in active learning courses shown by an overall mean effect size for failure rate with an odds ratio of 1.95 (Z = 10.4, P << 0.001).
+
+## d. Differences between Hedges’s g and Cohen’s d. Reason for the researchers to use Hedges’s g in their study 
+
+Both Hedge’s g and Cohen’s d are a measure of effect size. The major difference between their formulas is that Hedeges’s g uses the pooled weighted standard deviation instead of the pooled standard deviation Cohen’s d uses.  When sample sizes are below 20, Hedges’s g outperforms Cohen’s d and this might be the reason why the researchers chose to use Hedges’s g in their report, because many of the studies they use for their meta-analysis have less than 20 samples. 
+
+# Edit July 10
+Hedges: Typically better for smaller samples sizes as you change the degree of freedom
+
+
+
+
+
+
