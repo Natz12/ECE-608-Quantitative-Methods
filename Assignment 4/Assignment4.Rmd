@@ -24,6 +24,124 @@ Both Hedge’s g and Cohen’s d are a measure of effect size. The major differe
 # Edit July 10
 Hedges: Typically better for smaller samples sizes as you change the degree of freedom
 
+# 2. The university is currently revising its budget and would like to submit a few different study designs for the investigation. How many participants should be recruitted for the following research questions? Assuming it is not a cross-over design, meaning that students do not experience both active learning styles and traditional styles. The anticipated effect size and estimated total sample size are listed in the answer. The following solutions assume that Hedges’s g == Cohen’s d.
+
+## a) Using the suggested overall effect size reported across the 8 STEM disciplines, compute the sample size needed to find effects for a comparison between active and traditional lecturing styles. 
+
+```{r, warning = FALSE}
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(pwr)
+library(pwr2)
+```
+
+```{r}
+# Find the sample size
+d <- 0.47
+
+pwr.t.test(d = d,
+           n = NULL,
+           sig.level = 0.05,
+           power = 0.80,
+           type = "two.sample")
+
+```
+
+With an anticipated effect size of 0.47, an alpha of 0.5 and beta of 0.8, the estimated total sample size is 146 participants (73 per group).
+	
+## b) What is the sample size needed to find effects for a study design comparing active learning vs traditional lecturing between each of the 8 STEM disciplines, assuming an effect size of f=0.5 for learning style, and an effect size of f=0.2 for STEM discipline? 
+
+```{r}
+# Find the sample size
+ss.2way(a = 2, #learning style
+        b = 8, #STEM discipline
+        alpha = 0.05, #significance level
+        beta = 0.20, #beta = (1 - power)
+        f.A = 0.5, #f score for a
+        f.B = 0.2, #f score for b
+        B=100) #iteration times
+```
+
+23 participants are needed per group for a total of 368 having a significant level (alpha) of 0.5, power (beta) of 0.8, an expected f-score of 0.5 for learning style, and f = 0.2 for STEM discipline.
+
+## c) Using the grid.arrange fuction, create 3 side-by-side plots to show the sample size vs power curve for Engineering, Biology, and Mathematics disciplines. What sample size looks like an appropriate fit for all disciplines? 
+
+```{r}
+d.eng <- 0.481
+d.bio <- 0.303
+d.math <- 0.304
+
+f.eng <- sqrt(d.eng/(1-d.eng))
+f.bio <- sqrt(d.bio/(1-d.bio))
+f.math <- sqrt(d.math/(1-d.math))
+
+```
+
+```{r, warning = FALSE}
+ptab <- cbind(NULL, NULL)  
+
+n <- seq(2,300, by = 1)
+ 
+for (i in n){
+  pwrt1 <- pwr.t.test(n = i,
+                      sig.level = 0.05, power = NULL, 
+                      d = d.eng, alternative="two.sided")
+  pwrt2 <- pwr.t.test(n = i,
+                      sig.level = 0.05, power = NULL,
+                      d = d.bio, alternative="two.sided")
+  pwrt3 <- pwr.t.test(n = i,
+                      sig.level = 0.05, power = NULL,
+                      d = d.math, alternative="two.sided")
+  
+  ptab = rbind(ptab, cbind(1, i, pwrt1$d, pwrt1$power))
+  ptab = rbind(ptab, cbind(2, i, pwrt2$d, pwrt2$power))
+  ptab = rbind(ptab, cbind(3, i, pwrt3$d, pwrt3$power))
+}
+
+colnames(ptab) <- c("Discipline", "n", "d", "power")
+
+df <- as.data.frame(ptab) 
+```
+
+
+```{r,warning = FALSE , fig.width=10, fig.height = 8}
+
+samples <- c(min(which(df[which(df$Discipline == 1),][["power"]]>0.8)), min(which(df[which(df$Discipline == 2),][["power"]]>0.8)), min(which(df[which(df$Discipline == 3),][["power"]]>0.8)))
+
+labels <- c("1" = "Engineering", "2" = "Biology", "3" = "Math")
+
+power.plot <- ggplot(data = df, aes(x = n, y = power , color = factor(Discipline)))+ 
+  geom_line(size = 2) +
+  facet_wrap( ~ Discipline, ncol = 3, labeller = labeller(Discipline = labels)) +
+  theme_light() +
+  geom_hline(yintercept = 0.80)+
+  geom_text(aes(x,y, label = min(which(df[which(df$Discipline == 1),][["power"]]>0.8))), data = data.frame(x = min(which(df[which(df$Discipline == 1),][["power"]]>0.8)), y = 0.8, Discipline = 1 , yy = letters[1:3]), hjust = -0.8, vjust = 1, size = 6 )+
+  
+  geom_text(aes(x,y, label = min(which(df[which(df$Discipline == 2),][["power"]]>0.8))), data = data.frame(x = min(which(df[which(df$Discipline == 2),][["power"]]>0.8)), y = 0.8, Discipline = 2 , yy = letters[1:3]), hjust = -0.8, vjust = 1, size = 6 )+
+  
+  geom_text(aes(x,y, label = min(which(df[which(df$Discipline == 3),][["power"]]>0.8))), data = data.frame(x = min(which(df[which(df$Discipline == 3),][["power"]]>0.8)), y = 0.8, Discipline = 3 , yy = letters[1:3]), hjust = -0.8, vjust = 1, size = 6 )+
+  
+  geom_text(aes(x,y, label = "*"), data = data.frame(x = min(which(df[which(df$Discipline == 1),][["power"]]>0.8)), y = 0.8, Discipline = 1), size = 8, color = "black", vjust = 0.8 )+
+  
+  geom_text(aes(x,y, label = "*"), data = data.frame(x = min(which(df[which(df$Discipline == 2),][["power"]]>0.8)), y = 0.8, Discipline = 2), size = 8, color = "black" , vjust = 0.8)+
+  
+  geom_text(aes(x,y, label = "*"), data = data.frame(x = min(which(df[which(df$Discipline == 3),][["power"]]>0.8)), y = 0.8, Discipline = 3), size = 8, color = "black", vjust = 0.8)+
+  
+  theme(strip.text.x = element_text(size = 25), axis.text = element_text(size = 15), axis.title = element_text(size = 14))+
+  labs(y = 'Power', x = 'Sample Size', size = 8) 
+  
+fig_cap <- textGrob(paste("\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","(a)","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","(b)","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","\t","(c)\nFigure 1. Power plot for Engineering (a), Biology (b) and Math (c)"), 
+           gp = gpar(col="#000F64", fontsize=15), 
+           x = unit(0.005, "npc"), 
+           just = c("left", "bottom"))
+
+my_layout <- rbind(c(1,1),  c(2))
+grid.arrange(power.plot, fig_cap, layout_matrix = my_layout, heights=c(0.9, 0.1))
+
+```
+
+Figure 1 shows the power plots for engineering (g =0.481), Biology (g = 303), and Math (g= 304). If only one sample size were to be chosen for all disciplines and the 80% power level should be maintained, a samples size of 171 for each discipline should be selected (513 total).
 
 
 
