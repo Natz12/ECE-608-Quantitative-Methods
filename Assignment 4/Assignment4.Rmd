@@ -143,6 +143,15 @@ grid.arrange(power.plot, fig_cap, layout_matrix = my_layout, heights=c(0.9, 0.1)
 
 Figure 1 shows the power plots for engineering (g =0.481), Biology (g = 303), and Math (g= 304). If only one sample size were to be chosen for all disciplines and the 80% power level should be maintained, a samples size of 171 for each discipline should be selected (513 total).
 
+# 3. Using the first study design (2a), write up a full sample size calculation statement that would be submitted for a grant application and includes all the pertinent information that goes into the decision making. 
+
+Results from Freeman et al (2014) were used to estimate the effect size for finding a difference in undergraduate students’ performance when comparing active and traditional lecturing styles, where an effect size of g = 0.47, alpha of 0.05 and power of 0.8 yielded a sample size of 73 participants per group. 
+
+# Edit July 10
+
+Results from Freeman et al (2014) were used to estimate the effect size for finding a difference in grades between active and traditional learning, where an effect size of d=0.47, alpha, and power yielded a sample size of 72 students per group, with an overal sample of 144 samples
+
+
 
 
 
